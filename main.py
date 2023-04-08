@@ -45,53 +45,47 @@ class BFtoPy:
 
     def transpilePY(self):
         py_code = open("transpilePY.py", 'w')
-        py_code += 'registers = [0 for x in range(10)]\n \
-            current_register = 0\n'
+        temp = ''
+        num_indent = 0
+        indent = '\t'
+        temp += 'registers = [0 for x in range(10)]\n'
+        temp += 'current_register = 0\n'
         while self.bf_point in range(self.bf_code_len):
             multiple = self.howMany()
             elem = self.bf_code[self.bf_point]
             
             if elem == '>':
-                py_code += f'current_register += {multiple}\n'
+                temp += f'{num_indent * indent}current_register += {multiple}\n'
             
             elif elem == '<':
-                self.current_register -= multiple
+                temp += f'{num_indent * indent}current_register -= {multiple}\n'
 
             elif elem == '+':
                 #print(f'Adding to register {self.current_register} value is {registers[self.current_register]}')
-                registers[self.current_register] += multiple
+                temp += f'{num_indent * indent}registers[current_register] += {multiple} \n'
 
             elif elem == '-':
-                registers[self.current_register] -= multiple
+                temp += f'{num_indent * indent}registers[current_register] -= {multiple} \n'
                 #print(f'Counting down register {self.current_register} now at {registers[self.current_register]}')
 
             elif elem == '[':
-                loop_cond = registers[self.current_register]
-                loop = self.matchBracket()
-                #print(loop[1:-1])
-                bracket = BFtoPy(loop[1:-1], self.current_register)
-                while loop_cond > 0:
-                    #print(f'loop_cond is {loop_cond}\n'
-                    #      f'bracket.interpretBF() called')
-                    bracket.interpretBF()
-                    #print(f'Register 0 is at {registers[0]}')
-                    bracket.bf_point = 0
-                    loop_cond -= 1
-                self.bf_point += len(loop) - 1
-                #self.loop(bf_code[i:right_sq:], reg_manip)
+                temp += f'{num_indent * indent}for x in range(registers[current_register]): \n'
+                num_indent += 1
+
 
             elif elem == ']':
-                pass
+                num_indent -= 1
 
             elif elem == '.':
                 #print(registers[self.current_register])
                 for _ in range(multiple):
-                    print(chr(registers[self.current_register]))
+                    temp += 'print(chr(registers[current_register])) \n'
             
             elif elem == ',':
-                x = input()
+                temp += 'registers[current_register] = input() \n'
 
             self.bf_point += multiple
+        py_code.write(temp)
 
     '''error here: looping through [code], but reading and executing [code] after passing it to self.loop()
     might mean unpacking string in a different way... 
@@ -186,7 +180,7 @@ data = data.strip(' ')
 #print(data)
 
 answer = BFtoPy(data)
-#answer.transpilePY()
+answer.transpilePY()
 
 
 #print(answer.registers)
