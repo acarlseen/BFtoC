@@ -15,7 +15,7 @@ What does it all mean?!
 '''
 Things to add:
 Parenthesis counter/matching
-Process counter
+***Process counter***
 For loop func, include int k for loop condition. Pass value of register through for writing loop.
 
 Potentially calling interpretBF recursively when encountering a left bracket '['
@@ -26,9 +26,14 @@ Pass a new instance of BFtoPy class with substring for matched right brackets ']
 Basically something like:
 if elem == '[':
     bracket_code = self.bf_code[self.bf_point, self.matchBracket
+    
+    
+    
+Found the problem! Loop is starting with the self.bf_point pointing at the end of the substring already
+need a temporary variable to hold the place of the entering value
 '''
 
-registers = [0 for x in range(30000)]
+registers = [0 for x in range(10)]
 class BFtoPy:
 
     def __init__(self, bf_code: str, current_reg = 0):
@@ -38,27 +43,49 @@ class BFtoPy:
         self.current_register = current_reg
 
 
-    def loop(self, loop_func: str, current_register: int):
-        print(loop_func)
-        condition = current_register
-        print(f'current_register = {current_register} and the value is {registers[current_register]}')
-        while registers[condition] > 0:
-            for i, elem in enumerate(loop_func):
-                if elem == '+':
-                    registers[current_register] += 1
-                    #print(f'Counting Up {registers[current_register]} in register {current_register}')
+    def transpilePY(self):
+        py_code = open("transpilePY.py", 'w')
+        temp = ''
+        num_indent = 0
+        indent = '\t'
+        temp += 'registers = [0 for x in range(10)]\n'
+        temp += 'current_register = 0\n'
+        while self.bf_point in range(self.bf_code_len):
+            multiple = self.howMany()
+            elem = self.bf_code[self.bf_point]
+            
+            if elem == '>':
+                temp += f'{num_indent * indent}current_register += {multiple}\n'
+            
+            elif elem == '<':
+                temp += f'{num_indent * indent}current_register -= {multiple}\n'
 
-                elif elem == '-':
-                    registers[current_register] -= 1
-                    #print(f'Counting Down {registers[current_register]} in register {current_register}')
+            elif elem == '+':
+                #print(f'Adding to register {self.current_register} value is {registers[self.current_register]}')
+                temp += f'{num_indent * indent}registers[current_register] += {multiple} \n'
 
-                elif elem == '>':
-                    current_register += 1
-                elif elem == '<':
-                    current_register -= 1
-            #print(registers[0])
-            #registers[condition] -= 1
+            elif elem == '-':
+                temp += f'{num_indent * indent}registers[current_register] -= {multiple} \n'
+                #print(f'Counting down register {self.current_register} now at {registers[self.current_register]}')
 
+            elif elem == '[':
+                temp += f'{num_indent * indent}for x in range(registers[current_register]): \n'
+                num_indent += 1
+
+
+            elif elem == ']':
+                num_indent -= 1
+
+            elif elem == '.':
+                #print(registers[self.current_register])
+                for _ in range(multiple):
+                    temp += 'print(chr(registers[current_register])) \n'
+            
+            elif elem == ',':
+                temp += 'registers[current_register] = input() \n'
+
+            self.bf_point += multiple
+        py_code.write(temp)
 
     '''error here: looping through [code], but reading and executing [code] after passing it to self.loop()
     might mean unpacking string in a different way... 
@@ -69,31 +96,37 @@ class BFtoPy:
     '''
 
     def interpretBF(self):
+        #print(f'interpretBF() executing')
+        #print(f'{registers} at {id(registers)}')
         while self.bf_point in range(self.bf_code_len):
+            multiple = self.howMany()
             elem = self.bf_code[self.bf_point]
+            
             if elem == '>':
-                self.current_register += 1
+                self.current_register += multiple
+            
             elif elem == '<':
-                self.current_register -= 1
+                self.current_register -= multiple
 
             elif elem == '+':
                 #print(f'Adding to register {self.current_register} value is {registers[self.current_register]}')
-                registers[self.current_register] += 1
+                registers[self.current_register] += multiple
 
             elif elem == '-':
-                registers[self.current_register] -= 1
+                registers[self.current_register] -= multiple
                 #print(f'Counting down register {self.current_register} now at {registers[self.current_register]}')
-
 
             elif elem == '[':
                 loop_cond = registers[self.current_register]
                 loop = self.matchBracket()
-                print(loop[1:-1])
+                #print(loop[1:-1])
                 bracket = BFtoPy(loop[1:-1], self.current_register)
                 while loop_cond > 0:
-                    print(f'loop_cond is {loop_cond}')
+                    #print(f'loop_cond is {loop_cond}\n'
+                    #      f'bracket.interpretBF() called')
                     bracket.interpretBF()
-                    print(f'Register 0 is at {registers[0]}')
+                    #print(f'Register 0 is at {registers[0]}')
+                    bracket.bf_point = 0
                     loop_cond -= 1
                 self.bf_point += len(loop) - 1
                 #self.loop(bf_code[i:right_sq:], reg_manip)
@@ -103,11 +136,18 @@ class BFtoPy:
 
             elif elem == '.':
                 #print(registers[self.current_register])
-                print(chr(registers[self.current_register]))
-            self.bf_point += 1
+                for _ in range(multiple):
+                    print(chr(registers[self.current_register]))
+            
+            elif elem == ',':
+                x = input()
+
+            self.bf_point += multiple
+
 
     '''returns an index value for matching parenthesis/bracket'''
     def matchBracket(self) -> str:
+        #print(f'matchBracket executing')
         bracket_count = 1
         right_bracket = self.bf_point + 1
         while bracket_count > 0 and right_bracket < self.bf_code_len:
@@ -119,17 +159,29 @@ class BFtoPy:
         print(str(self.bf_code[self.bf_point: right_bracket]))
         return str(self.bf_code[self.bf_point: right_bracket])
 
+    def howMany(self):
+        #print(f'howMany() executing')
+        this_many = 1
+        i = self.bf_point
+        while i < self.bf_code_len - 1 and self.bf_code[i] == self.bf_code[i+1]:
+            this_many += 1
+            i += 1
+        #print(this_many)
+        return this_many
+
+
+
 
 
 text = open('./hell.bf', 'r')
 data = text.read()
+data = data.strip(' ')
 #print(ord('e'))
 #print(data)
 
 answer = BFtoPy(data)
-answer.interpretBF()
+answer.transpilePY()
 
-print(f'Register 0 is {registers[0]} \n'
-      f'Register 1 is {registers[1]}')
+
 #print(answer.registers)
 #print(len(answer.registers))
