@@ -87,13 +87,57 @@ class BFtoPy:
             self.bf_point += multiple
         py_code.write(temp)
 
-    '''error here: looping through [code], but reading and executing [code] after passing it to self.loop()
-    might mean unpacking string in a different way... 
-    while loop?
-    add a skip that passes the loop while doing nothing?
-    recursion???
+    def transpileC(self):
+        py_code = open("transpileC.c", 'w')
+        temp = ''
+        num_indent = 1
+        indent = '\t'
+        temp += '#include <stdio.h>\n\n'
+        temp += 'int registers[10] = {0};\n'
+        temp += 'int current_register = 0;\n\n'
+        temp += 'int main()\n{\n'
+        temp += '\tchar output;\n'
+        while self.bf_point in range(self.bf_code_len):
+            multiple = self.howMany()
+            elem = self.bf_code[self.bf_point]
+            
+            if elem == '>':
+                temp += f'{num_indent * indent}current_register += {multiple};\n'
+            
+            elif elem == '<':
+                temp += f'{num_indent * indent}current_register -= {multiple};\n'
+
+            elif elem == '+':
+                #print(f'Adding to register {self.current_register} value is {registers[self.current_register]}')
+                temp += f'{num_indent * indent}registers[current_register] += {multiple}; \n'
+
+            elif elem == '-':
+                temp += f'{num_indent * indent}registers[current_register] -= {multiple}; \n'
+                #print(f'Counting down register {self.current_register} now at {registers[self.current_register]}')
+
+            elif elem == '[':
+                temp += f'{num_indent * indent}while (registers[current_register] > 0) \n {num_indent * indent}{{\n'
+                num_indent += 1
+
+
+            elif elem == ']':
+                num_indent -= 1
+                temp += f'{num_indent * indent}}} \n'
+
+            elif elem == '.':
+                #print(registers[self.current_register])
+                for _ in range(multiple):
+                    temp += f'{num_indent * indent}output = (char) registers[current_register];\n'
+                    temp += f'{num_indent * indent}printf(output); \n'
+            
+            elif elem == ',':
+                temp += 'registers[current_register] = scanf(); \n'
+
+            self.bf_point += multiple
+        temp += '\treturn 0; \n'
+        temp += '}'
+        py_code.write(temp)
     
-    '''
 
     def interpretBF(self):
         #print(f'interpretBF() executing')
@@ -177,10 +221,10 @@ text = open('./hell.bf', 'r')
 data = text.read()
 data = data.strip(' ')
 #print(ord('e'))
-#print(data)
+print(data)
 
 answer = BFtoPy(data)
-answer.transpilePY()
+answer.transpileC()
 
 
 #print(answer.registers)
