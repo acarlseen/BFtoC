@@ -127,8 +127,8 @@ class BFtoPy:
             elif elem == '.':
                 #print(registers[self.current_register])
                 for _ in range(multiple):
-                    temp += f'{num_indent * indent}output = (char) registers[current_register];\n'
-                    temp += f'{num_indent * indent}printf(output); \n'
+                    #temp += f'{num_indent * indent}output = (char) registers[current_register];\n'
+                    temp += f'{num_indent * indent}printf("%c", registers[current_register]); \n'
             
             elif elem == ',':
                 temp += 'registers[current_register] = scanf(); \n'
